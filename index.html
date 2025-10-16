@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mau jadi pacar aku?</title>
+  <style>
+    :root{
+      --bg:#0f172a; --card:#0b1220; --accent:#f97316; --muted:#94a3b8;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071029 0%,#071833 100%);color:#e6eef8}
+
+    .card{width:min(720px,92vw);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:40px;border-radius:16px;box-shadow:0 10px 30px rgba(2,6,23,0.6);text-align:center;position:relative;overflow:hidden}
+    h1{margin:0 0 8px;font-size:28px}
+    p.lead{margin:0 0 20px;color:var(--muted)}
+
+    .buttons{display:flex;gap:18px;justify-content:center;align-items:center}
+    button{cursor:pointer;border:0;padding:14px 20px;border-radius:12px;font-weight:600;letter-spacing:0.2px}
+
+    .yes{
+      background:linear-gradient(90deg,#34d399,#10b981);
+      color:#042018;box-shadow:0 8px 20px rgba(16,185,129,0.12);
+      transform:translateY(0);transition:transform .15s ease
+    }
+    .yes:active{transform:translateY(2px)}
+
+    .no{
+      background:linear-gradient(90deg,#e11d48,#be185d);
+      color:#fff;position:relative;min-width:110px;transition:transform .25s cubic-bezier(.2,.9,.3,1)
+    }
+
+    /* Confetti container */
+    .confetti{pointer-events:none;position:absolute;inset:0;overflow:hidden}
+    .message{margin-top:20px;font-size:18px;opacity:0;transform:translateY(6px);transition:all .35s ease}
+    .message.show{opacity:1;transform:translateY(0)}
+
+    /* small instructions */
+    .hint{position:absolute;right:14px;top:14px;color:var(--muted);font-size:12px}
+
+    /* footer */
+    .credit{margin-top:18px;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="hint">Klik 'No' dan lihat apa yang terjadi 👀</div>
+    <h1>Mau ga jadi pacar aku?</h1>
+    <p class="lead">Pilih jawabanmu — tapi hati-hati kalau pilih "No"...</p>
+
+    <div class="buttons">
+      <button class="yes" id="yesBtn">Yes 💚</button>
+      <button class="no" id="noBtn">No 🚀</button>
+    </div>
+
+    <p class="message" id="msg">Yeay! Aku bahagia kamu jawab "Yes" 😄</p>
+
+    <div class="confetti" id="confetti"></div>
+    <div class="credit">Buat santai-santai: ubah warna & teks sesukamu ✨</div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const msg = document.getElementById('msg');
+    const confettiRoot = document.getElementById('confetti');
+    const card = document.getElementById('card');
+
+    // YES behaviour: show message + confetti
+    yesBtn.addEventListener('click', ()=>{
+      msg.classList.add('show');
+      burstConfetti(32);
+      // small pulse animation on card
+      card.animate([
+        { transform: 'scale(1)' },
+        { transform: 'scale(1.02)' },
+        { transform: 'scale(1)' }
+      ], { duration: 500, easing: 'ease' });
+    });
+
+    // NO behaviour: teleport the button to a random spot inside the card
+    noBtn.addEventListener('click', ()=>{
+      teleportNo();
+    });
+
+    // Also teleports if user tries to focus via keyboard (funny extra)
+    noBtn.addEventListener('focus', ()=>{
+      // small delay so keyboard users can still press if quick
+      setTimeout(()=>{ if(document.activeElement===noBtn) teleportNo(); }, 250);
+    });
+
+    function teleportNo(){
+      const pad = 12; // keep some padding from edges
+      const rect = card.getBoundingClientRect();
+      // compute available area for button center
+      const btnRect = noBtn.getBoundingClientRect();
+      const maxX = rect.width - btnRect.width - pad*2;
+      const maxY = rect.height - btnRect.height - pad*2;
+      const x = Math.max(0, Math.random()*maxX) + pad;
+      const y = Math.max(0, Math.random()*maxY) + pad + 50; // shift a bit downward for visual
+
+      // animate using transform
+      noBtn.style.transition = 'transform 500ms cubic-bezier(.2,.9,.3,1)';
+      // compute translate values relative to current position
+      const parentRect = card.getBoundingClientRect();
+      const curr = noBtn.getBoundingClientRect();
+      const currLeft = curr.left - parentRect.left;
+      const currTop = curr.top - parentRect.top;
+      const dx = x - currLeft;
+      const dy = y - currTop;
+
+      // apply transform
+      noBtn.style.transform = `translate(${dx}px, ${dy}px)`;
+
+      // small 'warp' effect using scale
+      noBtn.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(1)` },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.6)` },
+        { transform: `translate(${dx}px, ${dy}px) scale(1)` }
+      ], { duration: 520, easing: 'cubic-bezier(.2,.9,.3,1)' });
+
+      // after animation ends, clean inline style and move DOM location to keep layout consistent
+      setTimeout(()=>{
+        noBtn.style.transition = '';
+        noBtn.style.transform = '';
+        // set absolute position in the card so it visually stays
+        noBtn.style.position = 'absolute';
+        noBtn.style.left = x + 'px';
+        noBtn.style.top = y + 'px';
+      }, 520);
+
+      // tiny playful message if user keeps trying
+      msg.textContent = 'Wah, No teleport! Coba tekan Yes aja 😊';
+      msg.classList.add('show');
+      setTimeout(()=>{ msg.classList.remove('show'); msg.textContent = 'Yeay! Aku bahagia kamu jawab "Yes" 😄'; }, 2200);
+    }
+
+    // Create simple confetti pieces
+    function burstConfetti(amount){
+      for(let i=0;i<amount;i++){
+        const el = document.createElement('div');
+        el.style.position='absolute';
+        el.style.width = (6 + Math.random()*8) + 'px';
+        el.style.height = (8 + Math.random()*6) + 'px';
+        el.style.left = (50 + (Math.random()-0.5)*30) + '%';
+        el.style.top = (45 + (Math.random()-0.5)*10) + '%';
+        el.style.opacity = Math.random()*0.9 + 0.4;
+        el.style.borderRadius = '2px';
+        // random bright color
+        const colors = ['#ef4444','#f97316','#f59e0b','#10b981','#34d399','#60a5fa','#a78bfa'];
+        el.style.background = colors[Math.floor(Math.random()*colors.length)];
+        el.style.pointerEvents='none';
+        confettiRoot.appendChild(el);
+
+        // animate fall and rotate
+        const dx = (Math.random()-0.5)*200;
+        const dy = 400 + Math.random()*220;
+        const rot = (Math.random()-0.5)*720;
+        el.animate([
+          { transform: 'translate(0,0) rotate(0deg)', opacity:1 },
+          { transform: `translate(${dx}px, ${dy}px) rotate(${rot}deg)`, opacity:0 }
+        ], { duration: 900 + Math.random()*700, easing: 'cubic-bezier(.2,.9,.3,1)' });
+
+        // remove later
+        setTimeout(()=>{ el.remove(); }, 1800);
+      }
+    }
+
+    // Make card responsive: if window resizes and noBtn was absolute, keep it inside
+    window.addEventListener('resize', ()=>{
+      const style = window.getComputedStyle(noBtn);
+      if(style.position === 'absolute'){
+        // ensure button stays within card bounds; if outside, reset to flow
+        const rect = card.getBoundingClientRect();
+        const btn = noBtn.getBoundingClientRect();
+        if(btn.left < rect.left || btn.right > rect.right || btn.top < rect.top || btn.bottom > rect.bottom){
+          // reset to normal flow
+          noBtn.style.position = '';
+          noBtn.style.left = '';
+          noBtn.style.top = '';
+        }
+      }
+    });
+
+    // small accessibility: allow Enter on Yes
+    yesBtn.addEventListener('keydown', e=>{ if(e.key==='Enter') yesBtn.click(); });
+    noBtn.addEventListener('keydown', e=>{ if(e.key==='Enter') noBtn.click(); });
+  </script>
+</body>
+</html>
